@@ -17,53 +17,48 @@
 
 package io.aiven.connect.jdbc.dialect;
 
-import java.lang.reflect.Array;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import org.apache.kafka.connect.data.Date;
-import org.apache.kafka.connect.data.Decimal;
-import org.apache.kafka.connect.data.Schema;
-import org.apache.kafka.connect.data.SchemaBuilder;
-import org.apache.kafka.connect.data.Time;
-import org.apache.kafka.connect.data.Timestamp;
-import org.apache.kafka.connect.errors.DataException;
-
+import com.google.common.collect.ImmutableMap;
 import io.aiven.connect.jdbc.config.JdbcConfig;
 import io.aiven.connect.jdbc.dialect.DatabaseDialectProvider.SubprotocolBasedProvider;
 import io.aiven.connect.jdbc.sink.metadata.SinkRecordField;
 import io.aiven.connect.jdbc.source.ColumnMapping;
-import io.aiven.connect.jdbc.util.ColumnDefinition;
-import io.aiven.connect.jdbc.util.ColumnId;
-import io.aiven.connect.jdbc.util.ExpressionBuilder;
-import io.aiven.connect.jdbc.util.IdentifierRules;
-import io.aiven.connect.jdbc.util.TableDefinition;
-import io.aiven.connect.jdbc.util.TableId;
+import io.aiven.connect.jdbc.util.*;
+import org.apache.kafka.connect.data.Date;
+import org.apache.kafka.connect.data.Time;
+import org.apache.kafka.connect.data.Timestamp;
+import org.apache.kafka.connect.data.*;
+import org.apache.kafka.connect.errors.DataException;
+
+import java.lang.reflect.Array;
+import java.sql.*;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A {@link DatabaseDialect} for PostgreSQL.
  */
 public class PostgreSqlDatabaseDialect extends GenericDatabaseDialect {
 
-    private static final Map<Schema.Type, Class<?>> SUPPORTED_ARRAY_VALUE_TYPES_TO_JAVA = Map.of(
-            Schema.Type.INT8, short.class,
-            Schema.Type.INT16, short.class,
-            Schema.Type.INT32, int.class,
-            Schema.Type.INT64, long.class,
-            Schema.Type.FLOAT32, float.class,
-            Schema.Type.FLOAT64, double.class,
-            Schema.Type.BOOLEAN, boolean.class,
-            Schema.Type.STRING, String.class
-    );
+//    private static final Map<Schema.Type, Class<?>> SUPPORTED_ARRAY_VALUE_TYPES_TO_JAVA = Map.of(
+//            Schema.Type.INT8, short.class,
+//            Schema.Type.INT16, short.class,
+//            Schema.Type.INT32, int.class,
+//            Schema.Type.INT64, long.class,
+//            Schema.Type.FLOAT32, float.class,
+//            Schema.Type.FLOAT64, double.class,
+//            Schema.Type.BOOLEAN, boolean.class,
+//            Schema.Type.STRING, String.class
+//    );
+    private static final Map<Schema.Type, Class<?>> SUPPORTED_ARRAY_VALUE_TYPES_TO_JAVA = ImmutableMap.<Schema.Type, Class<?>>builder()
+            .put(Schema.Type.INT8, short.class)
+            .put(Schema.Type.INT16, short.class)
+            .put(Schema.Type.INT32, int.class)
+            .put(Schema.Type.INT64, long.class)
+            .put(Schema.Type.FLOAT32, float.class)
+            .put(Schema.Type.FLOAT64, double.class)
+            .put(Schema.Type.BOOLEAN, boolean.class)
+            .put(Schema.Type.STRING, String.class)
+            .build();
 
     /**
      * The provider for {@link PostgreSqlDatabaseDialect}.
@@ -85,7 +80,8 @@ public class PostgreSqlDatabaseDialect extends GenericDatabaseDialect {
 
     protected static final String UUID_TYPE_NAME = "uuid";
 
-    private static final List<String> CAST_TYPES = List.of(JSON_TYPE_NAME, JSONB_TYPE_NAME, UUID_TYPE_NAME);
+//    private static final List<String> CAST_TYPES = List.of(JSON_TYPE_NAME, JSONB_TYPE_NAME, UUID_TYPE_NAME);
+    private static final List<String> CAST_TYPES = Arrays.asList(JSON_TYPE_NAME, JSONB_TYPE_NAME, UUID_TYPE_NAME);
 
     /**
      * Create a new dialect instance with the given connector configuration.
@@ -403,8 +399,8 @@ public class PostgreSqlDatabaseDialect extends GenericDatabaseDialect {
 
     private String cast(final TableDefinition tableDfn, final ColumnId columnId) {
         if (Objects.nonNull(tableDfn)) {
-            final var columnDef = tableDfn.definitionForColumn(columnId.name());
-            final var typeName = columnDef.typeName();
+            final ColumnDefinition columnDef = tableDfn.definitionForColumn(columnId.name());
+            final String typeName = columnDef.typeName();
             if (Objects.nonNull(typeName)) {
                 if (CAST_TYPES.contains(typeName.toLowerCase())) {
                     return "::" + typeName.toLowerCase();

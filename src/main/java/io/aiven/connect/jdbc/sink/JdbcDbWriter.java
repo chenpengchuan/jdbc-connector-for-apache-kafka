@@ -19,12 +19,16 @@ package io.aiven.connect.jdbc.sink;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import io.aiven.connect.jdbc.metrics.JdbcMetrics;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.sink.SinkRecord;
 
@@ -49,6 +53,8 @@ public class JdbcDbWriter {
 
     final CachedConnectionProvider cachedConnectionProvider;
 
+    private JdbcMetrics jdbcMetrics = null;
+
     JdbcDbWriter(final JdbcSinkConfig config, final DatabaseDialect dbDialect, final DbStructure dbStructure) {
         this.config = config;
         this.dbDialect = dbDialect;
@@ -61,6 +67,10 @@ public class JdbcDbWriter {
                 connection.setAutoCommit(false);
             }
         };
+
+        if (config.metricsEnabled) {
+            this.jdbcMetrics = JdbcMetrics.buildOrGetInstance(config);
+        }
     }
 
     void write(final Collection<SinkRecord> records) throws SQLException {
@@ -84,6 +94,14 @@ public class JdbcDbWriter {
             buffer.close();
         }
         connection.commit();
+
+        if (config.metricsEnabled) {
+            jdbcMetrics.getMeterRegistry().counter("jdbc_sink", Tags.of(
+                    Tag.of("connector_name", config.connectorName()),
+                    Tag.of("output_record", Integer.toString(records.size())),
+                    Tag.of("commit_time", LocalDateTime.now().toString())
+            ));
+        }
     }
 
     void closeQuietly() {

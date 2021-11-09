@@ -36,8 +36,8 @@ repositories {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 checkstyle {
@@ -107,6 +107,7 @@ ext {
 
 dependencies {
     compileOnly "org.apache.kafka:connect-api:$kafkaVersion"
+    implementation "io.micrometer:micrometer-registry-prometheus:1.7.5"
 
     runtimeOnly "org.xerial:sqlite-jdbc:3.32.3"
     runtimeOnly "org.postgresql:postgresql:42.2.10"

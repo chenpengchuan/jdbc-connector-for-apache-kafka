@@ -50,7 +50,7 @@ public class DbStructure {
     }
 
     public TableDefinition tableDefinitionFor(final TableId tableId, final Connection connection) throws SQLException {
-        final var tblDefinition = tableDefns.get(connection, tableId);
+        final TableDefinition tblDefinition = tableDefns.get(connection, tableId);
         if (Objects.nonNull(tblDefinition)) {
             return tblDefinition;
         } else {

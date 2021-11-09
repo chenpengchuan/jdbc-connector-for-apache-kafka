@@ -133,16 +133,16 @@ public class FieldsMetadata {
             );
         }
 
-        final var allFieldsOrdered = new LinkedHashMap<String, SinkRecordField>();
-        for (final var fieldName : JdbcSinkConfig.DEFAULT_KAFKA_PK_NAMES) {
+        final Map<String, SinkRecordField> allFieldsOrdered = new LinkedHashMap<String, SinkRecordField>();
+        for (final String fieldName : JdbcSinkConfig.DEFAULT_KAFKA_PK_NAMES) {
             if (allFields.containsKey(fieldName)) {
                 allFieldsOrdered.put(fieldName, allFields.get(fieldName));
             }
         }
 
         if (valueSchema != null) {
-            for (final var field : valueSchema.fields()) {
-                final var fieldName = field.name();
+            for (final Field field : valueSchema.fields()) {
+                final String fieldName = field.name();
                 if (allFields.containsKey(fieldName)) {
                     allFieldsOrdered.put(fieldName, allFields.get(fieldName));
                 }
@@ -150,9 +150,9 @@ public class FieldsMetadata {
         }
 
         if (allFieldsOrdered.size() < allFields.size()) {
-            final var fieldKeys = new ArrayList<>(allFields.keySet());
+            final List<String> fieldKeys = new ArrayList<>(allFields.keySet());
             Collections.sort(fieldKeys);
-            for (final var fieldName : fieldKeys) {
+            for (final String fieldName : fieldKeys) {
                 if (!allFieldsOrdered.containsKey(fieldName)) {
                     allFieldsOrdered.put(fieldName, allFields.get(fieldName));
                 }

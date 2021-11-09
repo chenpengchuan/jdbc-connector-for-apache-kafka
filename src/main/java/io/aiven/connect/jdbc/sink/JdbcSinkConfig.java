@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
+import io.aiven.connect.jdbc.util.ConfigUtils;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 
@@ -173,6 +174,16 @@ public class JdbcSinkConfig extends JdbcConfig {
             + " while this configuration is applicable for the other columns.";
     private static final String FIELDS_WHITELIST_DISPLAY = "Fields Whitelist";
 
+    public static final String METRICS_ENABLED = "metrics.enabled";
+    private static final String METRICS_ENABLED_DEFAULT = "false";
+    private static final String METRICS_ENABLED_DOC = "Whether to treat ``null`` metrics is not enabled";
+    private static final String METRICS_ENABLED_DISPLAY = "Enable metrics";
+
+    public static final String METRICS_EXPORT_PORT = "metrics.export.port";
+    private static final String METRICS_EXPORT_PORT_DEFAULT = "8008";
+    private static final String METRICS_EXPORT_PORT_DOC = "metrics export httpServer port(default 8008),and config metrics.enabled must be true.";
+    private static final String METRICS_EXPORT_PORT_DISPLAY = "export metrics port";
+
     private static final ConfigDef.Range NON_NEGATIVE_INT_VALIDATOR = ConfigDef.Range.atLeast(0);
 
     private static final String WRITES_GROUP = "Writes";
@@ -215,7 +226,26 @@ public class JdbcSinkConfig extends JdbcConfig {
                 BATCH_SIZE_DOC, WRITES_GROUP,
                 2,
                 ConfigDef.Width.SHORT,
-                BATCH_SIZE_DISPLAY);
+                BATCH_SIZE_DISPLAY)
+            .define(
+                METRICS_ENABLED,
+                ConfigDef.Type.BOOLEAN,
+                METRICS_ENABLED_DEFAULT,
+                ConfigDef.Importance.LOW,
+                METRICS_ENABLED_DOC, WRITES_GROUP,
+                5,
+                ConfigDef.Width.SHORT,
+                METRICS_ENABLED_DISPLAY
+            ).define(
+                METRICS_EXPORT_PORT,
+                ConfigDef.Type.INT,
+                METRICS_EXPORT_PORT_DEFAULT,
+                ConfigDef.Importance.LOW,
+                METRICS_EXPORT_PORT_DOC, WRITES_GROUP,
+                6,
+                ConfigDef.Width.SHORT,
+                METRICS_EXPORT_PORT_DISPLAY
+            );
 
         // Data Mapping
         CONFIG_DEF
@@ -354,6 +384,7 @@ public class JdbcSinkConfig extends JdbcConfig {
                 RETRY_BACKOFF_MS_DISPLAY);
     }
 
+    public final String connectorName;
     public final String tableNameFormat;
     public final Map<String, String> topicsToTablesMapping;
     public final boolean tableNameNormalize;
@@ -367,9 +398,12 @@ public class JdbcSinkConfig extends JdbcConfig {
     public final List<String> pkFields;
     public final Set<String> fieldsWhitelist;
     public final TimeZone timeZone;
+    public final boolean metricsEnabled;
+    public final int metricsHttpPort;
 
     public JdbcSinkConfig(final Map<?, ?> props) {
         super(CONFIG_DEF, props);
+        connectorName = ConfigUtils.connectorName(props);
         tableNameFormat = getString(TABLE_NAME_FORMAT).trim();
         tableNameNormalize = getBoolean(TABLE_NAME_NORMALIZE);
         topicsToTablesMapping = topicToTableMapping(getList(TOPICS_TO_TABLES_MAPPING));
@@ -384,6 +418,8 @@ public class JdbcSinkConfig extends JdbcConfig {
         fieldsWhitelist = new HashSet<>(getList(FIELDS_WHITELIST));
         final String dbTimeZone = getString(DB_TIMEZONE_CONFIG);
         timeZone = TimeZone.getTimeZone(ZoneId.of(dbTimeZone));
+        metricsEnabled = getBoolean(METRICS_ENABLED);
+        metricsHttpPort = getInt(METRICS_EXPORT_PORT);
     }
 
     static Map<String, String> topicToTableMapping(final List<String> value) {
@@ -392,6 +428,10 @@ public class JdbcSinkConfig extends JdbcConfig {
                     .map(s -> s.split(":"))
                     .collect(Collectors.toMap(e -> e[0], e -> e[1]))
                 : Collections.emptyMap();
+    }
+
+    public String connectorName() {
+        return connectorName;
     }
 
     private static class EnumValidator implements ConfigDef.Validator {
