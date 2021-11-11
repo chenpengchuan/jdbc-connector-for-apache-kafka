@@ -17,27 +17,25 @@
 
 package io.aiven.connect.jdbc.sink;
 
+import io.aiven.connect.jdbc.dialect.DatabaseDialect;
+import io.aiven.connect.jdbc.metrics.JdbcMetrics;
+import io.aiven.connect.jdbc.util.CachedConnectionProvider;
+import io.aiven.connect.jdbc.util.TableId;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
+import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.sink.SinkRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import io.aiven.connect.jdbc.metrics.JdbcMetrics;
-import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.Tags;
-import org.apache.kafka.connect.errors.ConnectException;
-import org.apache.kafka.connect.sink.SinkRecord;
-
-import io.aiven.connect.jdbc.dialect.DatabaseDialect;
-import io.aiven.connect.jdbc.util.CachedConnectionProvider;
-import io.aiven.connect.jdbc.util.TableId;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class JdbcDbWriter {
 
@@ -53,7 +51,7 @@ public class JdbcDbWriter {
 
     final CachedConnectionProvider cachedConnectionProvider;
 
-    private JdbcMetrics jdbcMetrics = null;
+    private Counter counter;
 
     JdbcDbWriter(final JdbcSinkConfig config, final DatabaseDialect dbDialect, final DbStructure dbStructure) {
         this.config = config;
@@ -69,7 +67,10 @@ public class JdbcDbWriter {
         };
 
         if (config.metricsEnabled) {
-            this.jdbcMetrics = JdbcMetrics.buildOrGetInstance(config);
+            JdbcMetrics jdbcMetrics = JdbcMetrics.buildOrGetInstance(config);
+            this.counter = jdbcMetrics.getMeterRegistry().counter("jdbc_sink", Tags.of(
+                    Tag.of("connector_name", config.connectorName())
+            ));
         }
     }
 
@@ -96,11 +97,7 @@ public class JdbcDbWriter {
         connection.commit();
 
         if (config.metricsEnabled) {
-            jdbcMetrics.getMeterRegistry().counter("jdbc_sink", Tags.of(
-                    Tag.of("connector_name", config.connectorName()),
-                    Tag.of("output_record", Integer.toString(records.size())),
-                    Tag.of("commit_time", LocalDateTime.now().toString())
-            ));
+            counter.increment(records.size());
         }
     }
 
