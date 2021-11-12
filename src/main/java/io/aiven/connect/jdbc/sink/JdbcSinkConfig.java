@@ -103,6 +103,13 @@ public class JdbcSinkConfig extends JdbcConfig {
             + " table, when possible.";
     private static final String BATCH_SIZE_DISPLAY = "Batch Size";
 
+    public static final String DELETE_ENABLED = "delete.enabled";
+    private static final String DELETE_ENABLED_DEFAULT = "false";
+    private static final String DELETE_ENABLED_DOC =
+            "Whether to treat ``null`` record values as deletes. Requires ``pk.mode`` "
+                    + "to be ``record_key``.";
+    private static final String DELETE_ENABLED_DISPLAY = "Enable deletes";
+
     public static final String AUTO_CREATE = "auto.create";
     private static final String AUTO_CREATE_DEFAULT = "false";
     private static final String AUTO_CREATE_DOC =
@@ -228,6 +235,15 @@ public class JdbcSinkConfig extends JdbcConfig {
                 ConfigDef.Width.SHORT,
                 BATCH_SIZE_DISPLAY)
             .define(
+                    DELETE_ENABLED,
+                    ConfigDef.Type.BOOLEAN,
+                    DELETE_ENABLED_DEFAULT,
+                    ConfigDef.Importance.MEDIUM,
+                    DELETE_ENABLED_DOC, WRITES_GROUP,
+                    3,
+                    ConfigDef.Width.SHORT,
+                    DELETE_ENABLED_DISPLAY
+            ).define(
                 METRICS_ENABLED,
                 ConfigDef.Type.BOOLEAN,
                 METRICS_ENABLED_DEFAULT,
@@ -389,6 +405,7 @@ public class JdbcSinkConfig extends JdbcConfig {
     public final Map<String, String> topicsToTablesMapping;
     public final boolean tableNameNormalize;
     public final int batchSize;
+    public final boolean deleteEnabled;
     public final int maxRetries;
     public final int retryBackoffMs;
     public final boolean autoCreate;
@@ -408,6 +425,7 @@ public class JdbcSinkConfig extends JdbcConfig {
         tableNameNormalize = getBoolean(TABLE_NAME_NORMALIZE);
         topicsToTablesMapping = topicToTableMapping(getList(TOPICS_TO_TABLES_MAPPING));
         batchSize = getInt(BATCH_SIZE);
+        deleteEnabled = getBoolean(DELETE_ENABLED);
         maxRetries = getInt(MAX_RETRIES);
         retryBackoffMs = getInt(RETRY_BACKOFF_MS);
         autoCreate = getBoolean(AUTO_CREATE);

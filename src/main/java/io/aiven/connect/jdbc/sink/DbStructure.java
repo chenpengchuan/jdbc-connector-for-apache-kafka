@@ -141,11 +141,13 @@ public class DbStructure {
             return false;
         }
 
-        for (final SinkRecordField missingField : missingFields) {
+        for (SinkRecordField missingField: missingFields) {
             if (!missingField.isOptional() && missingField.defaultValue() == null) {
                 throw new ConnectException(
-                        "Cannot ALTER to add missing field " + missingField
-                                + ", as it is not optional and does not have a default value"
+                        String.format(
+                                "Cannot ALTER %s to add missing field %s, as it is not optional and "
+                                        + "does not have a default value",
+                                tableId, missingField)
                 );
             }
         }

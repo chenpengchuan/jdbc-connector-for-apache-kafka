@@ -1384,6 +1384,24 @@ public class GenericDatabaseDialect implements DatabaseDialect {
     }
 
     @Override
+    public final String buildDeleteStatement(
+            TableId table,
+            Collection<ColumnId> keyColumns
+    ) {
+        ExpressionBuilder builder = expressionBuilder();
+        builder.append("DELETE FROM ");
+        builder.append(table);
+        if (!keyColumns.isEmpty()) {
+            builder.append(" WHERE ");
+            builder.appendList()
+                    .delimitedBy(" AND ")
+                    .transformedBy(ExpressionBuilder.columnNamesWith(" = ?"))
+                    .of(keyColumns);
+        }
+        return builder.toString();
+    }
+
+    @Override
     public StatementBinder statementBinder(
         final PreparedStatement statement,
         final JdbcSinkConfig.PrimaryKeyMode pkMode,
